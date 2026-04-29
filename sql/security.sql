@@ -210,3 +210,122 @@ BEGIN
       ADD CONSTRAINT fund_photos_storage_path_unique UNIQUE (storage_path);
   END IF;
 END $$;
+
+-- ─── 5. FORCE ROW LEVEL SECURITY ──────────────────────────────
+-- Por default, el dueño de la tabla (rol que la creó) bypassea RLS.
+-- FORCE hace que las policies apliquen también al owner. En Supabase
+-- el owner típico es `postgres` (superuser), que igualmente bypasea RLS;
+-- pero si en el futuro la app conecta con un rol no-superuser que
+-- accidentalmente se vuelva owner (ownership migra), FORCE evita que
+-- toda la RLS quede silenciosamente desactivada. service_role no se
+-- ve afectado: bypassea RLS por su grant explícito.
+
+DO $$
+DECLARE
+  t TEXT;
+  forced TEXT[] := ARRAY[
+    'profiles',
+    'developers',
+    'funds',
+    'fund_access',
+    'advisor_investors',
+    'contribution_milestones',
+    'contributions',
+    'documents',
+    'fund_photos',
+    'notifications',
+    'audit_logs'
+  ];
+BEGIN
+  FOREACH t IN ARRAY forced LOOP
+    EXECUTE format('ALTER TABLE %I FORCE ROW LEVEL SECURITY', t);
+  END LOOP;
+END $$;
+
+-- ─── 6. ESTRECHAR developers_select ───────────────────────────
+-- La policy original deja a cualquier autenticado leer todos los
+-- developers. Se restringe a admins y a usuarios con un fund que
+-- referencia ese developer (via fund_access para investors o
+-- advisor_fund_ids para advisors). El JOIN funds → developers que
+-- usan las páginas de advisor sigue funcionando porque el usuario
+-- tiene visibilidad sobre el fund.
+
+DROP POLICY IF EXISTS "developers_select" ON developers;
+CREATE POLICY "developers_select" ON developers FOR SELECT
+  USING (
+    is_admin()
+    OR EXISTS (
+      SELECT 1 FROM funds f
+      WHERE f.developer_id = developers.id
+        AND (
+          EXISTS (
+            SELECT 1 FROM fund_access fa
+            WHERE fa.fund_id = f.id AND fa.user_id = auth.uid()
+          )
+          OR f.id IN (SELECT * FROM advisor_fund_ids())
+        )
+    )
+  );
+
+-- ─── 7. AUDIT EN storage.objects ──────────────────────────────
+-- Trigger separado del genérico tg_audit_row porque storage.objects
+-- vive en otro schema y solo nos interesa loguear cambios de identidad
+-- (insert/delete del archivo o rename). Updates de metadata/last_accessed
+-- se ignoran para no llenar la tabla de ruido sin valor forense.
+--
+-- Nota: storage.objects pertenece al rol supabase_storage_admin. El
+-- CREATE TRIGGER requiere correr como postgres (Dashboard SQL Editor).
+
+CREATE OR REPLACE FUNCTION tg_audit_storage_object() RETURNS TRIGGER
+LANGUAGE plpgsql SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_actor  UUID := current_actor_id();
+  v_email  TEXT;
+  v_role   TEXT;
+  v_before JSONB;
+  v_after  JSONB;
+  v_pk     TEXT;
+BEGIN
+  IF v_actor IS NOT NULL THEN
+    SELECT p.email, p.role INTO v_email, v_role
+    FROM public.profiles p WHERE p.id = v_actor;
+  END IF;
+
+  IF TG_OP = 'INSERT' THEN
+    v_after := jsonb_build_object(
+      'id', NEW.id, 'bucket_id', NEW.bucket_id, 'name', NEW.name, 'owner', NEW.owner
+    );
+    v_pk := NEW.id::text;
+  ELSIF TG_OP = 'DELETE' THEN
+    v_before := jsonb_build_object(
+      'id', OLD.id, 'bucket_id', OLD.bucket_id, 'name', OLD.name, 'owner', OLD.owner
+    );
+    v_pk := OLD.id::text;
+  ELSE
+    IF OLD.bucket_id IS NOT DISTINCT FROM NEW.bucket_id
+       AND OLD.name IS NOT DISTINCT FROM NEW.name THEN
+      RETURN NEW;
+    END IF;
+    v_before := jsonb_build_object('id', OLD.id, 'bucket_id', OLD.bucket_id, 'name', OLD.name);
+    v_after  := jsonb_build_object('id', NEW.id, 'bucket_id', NEW.bucket_id, 'name', NEW.name);
+    v_pk := NEW.id::text;
+  END IF;
+
+  INSERT INTO public.audit_logs (
+    actor_id, actor_email, actor_role, action,
+    entity_table, entity_id, before, after, diff
+  ) VALUES (
+    v_actor, v_email, v_role, TG_OP,
+    'storage.objects', v_pk, v_before, v_after, NULL
+  );
+
+  RETURN COALESCE(NEW, OLD);
+END;
+$$;
+
+DROP TRIGGER IF EXISTS audit_storage_objects ON storage.objects;
+CREATE TRIGGER audit_storage_objects
+  AFTER INSERT OR UPDATE OR DELETE ON storage.objects
+  FOR EACH ROW EXECUTE FUNCTION tg_audit_storage_object();

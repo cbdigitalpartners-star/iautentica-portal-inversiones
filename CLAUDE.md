@@ -145,9 +145,13 @@ export async function POST(request: Request) {
 
 ### Lo que NO se audita (consciente)
 
-- **Uploads a Storage** (`storage.objects`) — los archivos en sí no se loguean. Pero las filas que esos uploads producen sí quedan registradas: `fund_photos.INSERT`, `documents.INSERT`, `funds.cover_image UPDATE`, `developers.logo_url UPDATE`. Si en el futuro hace falta trazar cada PUT/DELETE al bucket, sumar un trigger en `storage.objects` con la misma función.
 - **Tabla `notifications`** — ver justificación arriba.
 - **Lecturas** (descarga de docs, vista de fondos) — fuera de scope. Si llega un requerimiento de "quién vio qué documento", hay que agregar logueo explícito en [app/api/documents/[id]/download/route.ts](app/api/documents/[id]/download/route.ts).
+
+### Storage y eventos de auth
+
+- **`storage.objects`** SÍ se audita: el trigger `audit_storage_objects` ([sql/security.sql](sql/security.sql) sección 7) loguea INSERT/DELETE de cada objeto y UPDATE solo cuando cambia `bucket_id` o `name` (rename/mover). Los UPDATE de metadata/`last_accessed_at` se ignoran para no llenar la tabla. Filas en `audit_logs` con `entity_table = 'storage.objects'`.
+- **Eventos de auth** (login, password reset, fallos) los administra Supabase en `auth.audit_log_entries` (no es nuestra). Visible vía Dashboard → Authentication → Logs. No replicamos a nuestro `audit_logs` para no duplicar fuente de verdad. Si hace falta trazabilidad cruzada, hacer JOIN puntual `auth.audit_log_entries` ↔ `public.audit_logs` por `actor_id`/`user_id`.
 
 ### Retención
 
