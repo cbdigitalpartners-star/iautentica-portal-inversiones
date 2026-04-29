@@ -1,18 +1,49 @@
 import { requireAdmin } from "@/lib/auth-guard";
+import { requireSameOrigin } from "@/lib/csrf";
 import { createAuditedAdminClient } from "@/lib/supabase/admin";
 import { notifyUsers, investorAndAdvisorIdsForFund } from "@/lib/notifications";
 import { sendMail } from "@/lib/mail/resend";
 import { renderNewDocumentEmail } from "@/lib/mail/templates";
 import { NextResponse } from "next/server";
+import { z } from "zod";
+
+const DOCUMENT_CATEGORIES = [
+  "Update Mensual",
+  "Term Sheet",
+  "Legal",
+  "Informe Trimestral",
+  "Documentos proyectos",
+] as const;
+
+const createSchema = z
+  .object({
+    fund_id: z.string().uuid(),
+    name: z.string().trim().min(1),
+    category: z.enum(DOCUMENT_CATEGORIES),
+    storage_path: z.string().trim().min(1),
+  })
+  .strict();
+
+const patchSchema = z
+  .object({
+    id: z.string().uuid(),
+    name: z.string().trim().min(1).optional(),
+    category: z.enum(DOCUMENT_CATEGORIES).optional(),
+    storage_path: z.string().trim().min(1).optional(),
+  })
+  .strict();
 
 export async function POST(request: Request) {
+  const csrf = requireSameOrigin(request);
+  if (!csrf.ok) return csrf.response;
   const gate = await requireAdmin();
   if (!gate.ok) return gate.response;
 
-  const { fund_id, name, category, storage_path } = await request.json();
-  if (!fund_id || !name || !category || !storage_path) {
-    return NextResponse.json({ error: "fund_id, name, category y storage_path son requeridos" }, { status: 400 });
+  const parsed = createSchema.safeParse(await request.json());
+  if (!parsed.success) {
+    return NextResponse.json({ error: "Datos inválidos" }, { status: 400 });
   }
+  const { fund_id, name, category, storage_path } = parsed.data;
 
   const admin = createAuditedAdminClient(gate.userId);
 
@@ -67,12 +98,16 @@ export async function POST(request: Request) {
 }
 
 export async function PATCH(request: Request) {
+  const csrf = requireSameOrigin(request);
+  if (!csrf.ok) return csrf.response;
   const gate = await requireAdmin();
   if (!gate.ok) return gate.response;
 
-  const body = await request.json();
-  const { id, ...patch } = body;
-  if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
+  const parsed = patchSchema.safeParse(await request.json());
+  if (!parsed.success) {
+    return NextResponse.json({ error: "Datos inválidos" }, { status: 400 });
+  }
+  const { id, ...patch } = parsed.data;
 
   const admin = createAuditedAdminClient(gate.userId);
   const { data: doc, error } = (await admin

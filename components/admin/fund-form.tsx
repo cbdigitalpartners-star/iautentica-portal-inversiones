@@ -65,18 +65,24 @@ export function FundForm({
     });
     if (upErr) { setErr(`No pudimos subir la imagen: ${upErr.message}`); setUploading(false); return; }
     const { data } = supabase.storage.from("fund-photos").getPublicUrl(path);
-    setCoverImage(data.publicUrl);
 
     // En modo edición persistimos al toque para que el usuario no tenga que
-    // volver al botón Guardar solo por la imagen.
+    // volver al botón Guardar solo por la imagen. Si el UPDATE falla,
+    // eliminamos el objeto recién subido para no dejar archivo huérfano.
     if (isEdit && fund) {
       const { error: updErr } = await supabase
         .from("funds")
         .update({ cover_image: data.publicUrl })
         .eq("id", fund.id);
-      if (updErr) { setErr(updErr.message); setUploading(false); return; }
+      if (updErr) {
+        void supabase.storage.from("fund-photos").remove([path]);
+        setErr(updErr.message);
+        setUploading(false);
+        return;
+      }
       router.refresh();
     }
+    setCoverImage(data.publicUrl);
     setUploading(false);
   }
 

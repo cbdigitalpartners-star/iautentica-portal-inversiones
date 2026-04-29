@@ -22,6 +22,7 @@ Correr en orden en Supabase SQL Editor:
 1. [sql/schema.sql](sql/schema.sql) — tablas, helpers (`is_admin`, `is_advisor_of`, `advisor_fund_ids`), triggers, buckets.
 2. [sql/rls.sql](sql/rls.sql) — policies para todos los roles sobre todas las tablas + storage.
 3. [sql/audit.sql](sql/audit.sql) — tabla `audit_logs`, helper `current_actor_id()`, trigger genérico `tg_audit_row` enganchado a todas las tablas críticas. Idempotente.
+4. [sql/security.sql](sql/security.sql) — triggers defensivos: `profiles_protect_privileged` (no-admins no pueden cambiar `role`/`id`/`email` propios) y `advisor_investors_validate_roles` (los UUIDs deben coincidir con `role='advisor'` y `role='investor'` respectivamente). Idempotente.
 
 Tablas nuevas respecto a Capital Storage:
 - `developers` — inmobiliarias
@@ -275,11 +276,12 @@ RESEND_FROM_EMAIL                  # ej: no-reply@iautentica.cl
 2. Correr `sql/schema.sql`. Si reporta `storage.buckets does not exist`, entrar a Dashboard → Storage para inicializar el módulo, crear los 3 buckets a mano (`documents` privado, `fund-photos` y `developer-logos` públicos), luego re-correr (es idempotente).
 3. Correr `sql/rls.sql`.
 4. Correr `sql/audit.sql`.
-5. Crear admin inicial: Dashboard → Auth → Add user (Auto Confirm) → SQL `UPDATE profiles SET role='admin' WHERE email='...'`.
-6. Cargar los 7 proyectos seed (SQL `INSERT INTO funds ...` documentado en historial).
-7. (Opcional) Cuenta Resend + verificar dominio iautentica.cl (SPF+DKIM) → desactivar mail templates de Supabase Auth.
-8. Reemplazar placeholders en `.env.local`.
-9. Vercel: nuevo proyecto, conectar dominio `iautentica.cl`, mismas env vars.
+5. Correr `sql/security.sql`.
+6. Crear admin inicial: Dashboard → Auth → Add user (Auto Confirm) → SQL `UPDATE profiles SET role='admin' WHERE email='...'` (este UPDATE corre con service role en Dashboard, así que el trigger `profiles_protect_privileged` no lo bloquea).
+7. Cargar los 7 proyectos seed (SQL `INSERT INTO funds ...` documentado en historial).
+8. (Opcional) Cuenta Resend + verificar dominio iautentica.cl (SPF+DKIM) → desactivar mail templates de Supabase Auth.
+9. Reemplazar placeholders en `.env.local`.
+10. Vercel: nuevo proyecto, conectar dominio `iautentica.cl`, mismas env vars.
 
 Para **demo** se puede saltar Resend y dominio — basta con Supabase + Vercel (o local) + admin inicial via Dashboard.
 

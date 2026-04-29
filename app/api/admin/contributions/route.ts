@@ -1,21 +1,37 @@
 import { requireAdmin } from "@/lib/auth-guard";
+import { requireSameOrigin } from "@/lib/csrf";
 import { createAuditedAdminClient } from "@/lib/supabase/admin";
 import { notifyUsers, advisorIdsForInvestor } from "@/lib/notifications";
 import { sendMail } from "@/lib/mail/resend";
 import { renderContributionConfirmationEmail } from "@/lib/mail/templates";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { NextResponse } from "next/server";
+import { z } from "zod";
+
+const createSchema = z
+  .object({
+    user_id: z.string().uuid(),
+    fund_id: z.string().uuid(),
+    milestone_id: z.string().uuid().nullish(),
+    amount: z.coerce.number().finite(),
+    committed_amount: z.coerce.number().finite().nullish(),
+    dividends: z.coerce.number().finite().nullish(),
+    date: z.string().min(1),
+    notes: z.string().nullish(),
+  })
+  .strict();
 
 export async function POST(request: Request) {
+  const csrf = requireSameOrigin(request);
+  if (!csrf.ok) return csrf.response;
   const gate = await requireAdmin();
   if (!gate.ok) return gate.response;
 
-  const body = await request.json();
-  const { user_id, fund_id, milestone_id, amount, committed_amount, dividends, date, notes } = body;
-
-  if (!user_id || !fund_id || !amount || !date) {
-    return NextResponse.json({ error: "user_id, fund_id, amount y date son requeridos" }, { status: 400 });
+  const parsed = createSchema.safeParse(await request.json());
+  if (!parsed.success) {
+    return NextResponse.json({ error: "Datos inválidos" }, { status: 400 });
   }
+  const { user_id, fund_id, milestone_id, amount, committed_amount, dividends, date, notes } = parsed.data;
 
   const admin = createAuditedAdminClient(gate.userId);
 
