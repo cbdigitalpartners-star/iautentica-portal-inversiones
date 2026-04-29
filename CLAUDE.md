@@ -218,12 +218,15 @@ Se eliminaron Mapbox y `NEXT_PUBLIC_MAPBOX_TOKEN`.
 NEXT_PUBLIC_SUPABASE_URL
 NEXT_PUBLIC_SUPABASE_ANON_KEY
 NEXT_SUPABASE_SERVICE_ROLE_KEY    # nombre no-standard, lo lee lib/supabase/admin.ts
-NEXT_PUBLIC_APP_URL                # base para links en mails (ej http://localhost:3000)
+NEXT_PUBLIC_APP_URL                # base para links en mails Y allowlist de CSRF — obligatoria
 
 # Opcionales (modo demo funciona sin estas)
 RESEND_API_KEY
 RESEND_FROM_EMAIL                  # ej: no-reply@iautentica.cl
+CSRF_ALLOWED_ORIGINS               # extras para staging/preview, comma-separated (ej https://staging.iautentica.cl)
 ```
+
+> **CSRF:** [lib/csrf.ts](lib/csrf.ts) valida `Origin`/`Referer` contra `NEXT_PUBLIC_APP_URL` (más `CSRF_ALLOWED_ORIGINS` si se setea). **No** se deriva del header `Host` a propósito — un proxy mal configurado podría aceptar Hosts manipulados. Si la env no está, el helper falla cerrado.
 
 `NEXT_PUBLIC_MAPBOX_TOKEN` ya **no se usa** (se migró a Leaflet/OSM).
 
@@ -256,6 +259,13 @@ RESEND_FROM_EMAIL                  # ej: no-reply@iautentica.cl
     - Visualizaciones que anticipan la próxima pregunta del usuario (ej: barra de progreso aportado/comprometido en la card de Capital total).
     - Empty states con icono + 1-2 líneas cálidas, encerradas en `<Card>` para mantener la grilla (ver [app/(investor)/funds/page.tsx](app/(investor)/funds/page.tsx)).
     - 404 propio en [app/not-found.tsx](app/not-found.tsx): `Compass` + copy chileno + un único CTA al panel.
+
+## Hardening defensivo
+
+- **CSP + security headers** se aplican vía `headers()` en [next.config.mjs](next.config.mjs). La CSP solo se inyecta en `NODE_ENV=production` (en dev rompe HMR). `img-src` permite Supabase Storage y los tiles de CARTO; `connect-src` permite REST + websockets de Supabase. Si agregás un nuevo origen externo (analytics, CDN), tocar el array `cspDirectives`.
+- **Cookies `ia-role`/`ia-user`/`NEXT_LOCALE`** se setean con `secure: true` cuando `NODE_ENV=production`. En dev quedan sin `secure` para que funcionen sobre `http://localhost`.
+- **Errores de PostgREST** nunca se exponen al cliente — los handlers admin pasan por [lib/api-errors.ts](lib/api-errors.ts) (`dbError`) que loguea el mensaje real y devuelve 400 genérico. Errores de Supabase Auth (invite) sí se forwardean porque son admin-facing y útiles para UX. Errores de validación/negocio que escribimos nosotros (no `error.message` de DB) se devuelven con su texto original.
+- **Rate limit en memoria** ([lib/rate-limit.ts](lib/rate-limit.ts)): token bucket por proceso para `users.POST` (10/h por admin) y `documents.POST` (30/h por admin). **Limitación conocida:** en serverless cada instancia tiene su bucket, no se comparte. Es defensa contra runaway-script de un admin comprometido, no contra un atacante distribuido. Si en el futuro hay más de 1 admin con tráfico real, migrar a Upstash Redis.
 
     Si querés agregar otro toque, primero pasalo por el filtro: ¿sigue siendo el efecto que tendría una banca privada? Si la respuesta es "no, esto es más fintech/SaaS", descartar.
 17. **Páginas full-width, secciones contenidas** — todas las pantallas del investor (`/dashboard`, `/funds`, `/funds/[fundId]`, `/documents`, `/notifications`) usan el ancho completo del `<main>` (`flex-1 p-4 md:p-6`). Si alguna sección interna se siente "hero" en pantallas anchas (ej: galería de fotos), la palanca correcta es **subir densidad de la grilla en breakpoints altos**, no agregar `max-w-{n}` al contenedor de la página. La galería usa `grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5` con `aspect-video` por eso.

@@ -1,5 +1,6 @@
 import { requireAdmin } from "@/lib/auth-guard";
 import { requireSameOrigin } from "@/lib/csrf";
+import { dbError } from "@/lib/api-errors";
 import { createAuditedAdminClient } from "@/lib/supabase/admin";
 import { notifyUsers, investorAndAdvisorIdsForFund } from "@/lib/notifications";
 import { NextResponse } from "next/server";
@@ -53,7 +54,7 @@ export async function POST(request: Request) {
     })
     .select()
     .single();
-  if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+  if (error) return dbError("milestones.insert", error);
   return NextResponse.json({ milestone: data });
 }
 
@@ -79,7 +80,7 @@ export async function PATCH(request: Request) {
     .eq("id", id)
     .select("*, funds(name)")
     .single()) as { data: any; error: { message: string } | null };
-  if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+  if (error) return dbError("milestones.update", error);
 
   if (markReached) {
     const userIds = await investorAndAdvisorIdsForFund(data.fund_id);
@@ -109,6 +110,6 @@ export async function DELETE(request: Request) {
 
   const admin = createAuditedAdminClient(gate.userId);
   const { error } = await admin.from("contribution_milestones").delete().eq("id", id);
-  if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+  if (error) return dbError("milestones.delete", error);
   return NextResponse.json({ ok: true });
 }

@@ -1,5 +1,6 @@
 import { requireAdmin } from "@/lib/auth-guard";
 import { requireSameOrigin } from "@/lib/csrf";
+import { checkRateLimit, INVITE_LIMIT } from "@/lib/rate-limit";
 import { createAuditedAdminClient } from "@/lib/supabase/admin";
 import { sendMail } from "@/lib/mail/resend";
 import { renderInviteEmail } from "@/lib/mail/templates";
@@ -26,6 +27,14 @@ export async function POST(request: Request) {
   if (!csrf.ok) return csrf.response;
   const gate = await requireAdmin();
   if (!gate.ok) return gate.response;
+
+  const rl = checkRateLimit(`invite:${gate.userId}`, INVITE_LIMIT);
+  if (!rl.ok) {
+    return NextResponse.json(
+      { error: "Demasiadas invitaciones en poco tiempo. Probá de nuevo más tarde." },
+      { status: 429, headers: { "Retry-After": String(rl.retryAfterSeconds) } }
+    );
+  }
 
   const parsed = createSchema.safeParse(await request.json());
   if (!parsed.success) {

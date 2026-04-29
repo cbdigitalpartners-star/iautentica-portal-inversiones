@@ -1,5 +1,7 @@
 import { requireAdmin } from "@/lib/auth-guard";
 import { requireSameOrigin } from "@/lib/csrf";
+import { dbError } from "@/lib/api-errors";
+import { checkRateLimit, DOCUMENT_LIMIT } from "@/lib/rate-limit";
 import { createAuditedAdminClient } from "@/lib/supabase/admin";
 import { notifyUsers, investorAndAdvisorIdsForFund } from "@/lib/notifications";
 import { sendMail } from "@/lib/mail/resend";
@@ -39,6 +41,14 @@ export async function POST(request: Request) {
   const gate = await requireAdmin();
   if (!gate.ok) return gate.response;
 
+  const rl = checkRateLimit(`document:${gate.userId}`, DOCUMENT_LIMIT);
+  if (!rl.ok) {
+    return NextResponse.json(
+      { error: "Demasiadas subidas en poco tiempo. Probá de nuevo más tarde." },
+      { status: 429, headers: { "Retry-After": String(rl.retryAfterSeconds) } }
+    );
+  }
+
   const parsed = createSchema.safeParse(await request.json());
   if (!parsed.success) {
     return NextResponse.json({ error: "Datos inválidos" }, { status: 400 });
@@ -53,7 +63,7 @@ export async function POST(request: Request) {
     .select("*, funds(name)")
     .single()) as { data: any; error: { message: string } | null };
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+  if (error) return dbError("documents.insert", error);
 
   const fundName = doc.funds?.name ?? "";
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
@@ -116,7 +126,7 @@ export async function PATCH(request: Request) {
     .eq("id", id)
     .select("*, funds(name)")
     .single()) as { data: any; error: { message: string } | null };
-  if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+  if (error) return dbError("documents.update", error);
 
   // Notificar actualización
   const fundName = doc.funds?.name ?? "";

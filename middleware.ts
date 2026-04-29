@@ -51,12 +51,13 @@ export async function middleware(request: NextRequest) {
       .eq("id", user.id)
       .single();
 
+    const isProd = process.env.NODE_ENV === "production";
     role = (profile?.role as string | undefined) ?? "investor";
-    response.cookies.set("ia-role", role!, { httpOnly: true, sameSite: "lax", path: "/" });
-    response.cookies.set("ia-user", user.id, { httpOnly: true, sameSite: "lax", path: "/" });
+    response.cookies.set("ia-role", role!, { httpOnly: true, sameSite: "lax", path: "/", secure: isProd });
+    response.cookies.set("ia-user", user.id, { httpOnly: true, sameSite: "lax", path: "/", secure: isProd });
 
     if (profile?.locale) {
-      response.cookies.set("NEXT_LOCALE", profile.locale, { sameSite: "lax", path: "/" });
+      response.cookies.set("NEXT_LOCALE", profile.locale, { sameSite: "lax", path: "/", secure: isProd });
     }
   }
 

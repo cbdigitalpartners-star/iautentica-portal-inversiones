@@ -1,5 +1,6 @@
 import { requireAdmin } from "@/lib/auth-guard";
 import { requireSameOrigin } from "@/lib/csrf";
+import { dbError } from "@/lib/api-errors";
 import { createAuditedAdminClient } from "@/lib/supabase/admin";
 import { notifyUsers, advisorIdsForInvestor } from "@/lib/notifications";
 import { sendMail } from "@/lib/mail/resend";
@@ -68,7 +69,7 @@ export async function POST(request: Request) {
     .select("*, funds(name), profiles:user_id(email, full_name), contribution_milestones:milestone_id(name)")
     .single()) as { data: any; error: { message: string } | null };
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+  if (error) return dbError("contributions.insert", error);
 
   const fundName = contribution.funds?.name ?? "";
   const milestoneName = contribution.contribution_milestones?.name ?? null;

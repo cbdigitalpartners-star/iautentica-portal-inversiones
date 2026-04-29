@@ -1,5 +1,6 @@
 import { requireAdmin } from "@/lib/auth-guard";
 import { requireSameOrigin } from "@/lib/csrf";
+import { dbError } from "@/lib/api-errors";
 import { createAuditedAdminClient } from "@/lib/supabase/admin";
 import { NextResponse } from "next/server";
 import { z } from "zod";
@@ -46,7 +47,7 @@ export async function POST(request: Request) {
     .select()
     .single();
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+  if (error) return dbError("developers.write", error);
   return NextResponse.json({ developer: data });
 }
 
@@ -64,7 +65,7 @@ export async function PATCH(request: Request) {
 
   const admin = createAuditedAdminClient(gate.userId);
   const { data, error } = await admin.from("developers").update(patch).eq("id", id).select().single();
-  if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+  if (error) return dbError("developers.write", error);
   return NextResponse.json({ developer: data });
 }
 
@@ -82,6 +83,6 @@ export async function DELETE(request: Request) {
 
   const admin = createAuditedAdminClient(gate.userId);
   const { error } = await admin.from("developers").delete().eq("id", id);
-  if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+  if (error) return dbError("developers.delete", error);
   return NextResponse.json({ ok: true });
 }

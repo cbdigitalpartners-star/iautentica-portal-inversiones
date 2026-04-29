@@ -10,24 +10,25 @@ function normalizeOrigin(value: string | null | undefined): string | null {
   }
 }
 
-function allowedOrigins(request: Request): Set<string> {
-  const allowed = new Set<string>();
+function buildAllowedOrigins(): string[] {
+  // La allowlist se basa exclusivamente en variables de entorno controladas
+  // por el deploy. NO derivamos orígenes del header Host del request: en
+  // entornos donde el proxy/edge no fija o no valida Host, un atacante
+  // podría enviarlo manipulado y relajar la validación.
+  const origins: string[] = [];
 
-  const host = request.headers.get("host");
-  if (host) {
-    allowed.add(`https://${host}`);
-    if (host.startsWith("localhost") || host.startsWith("127.0.0.1")) {
-      allowed.add(`http://${host}`);
+  const app = normalizeOrigin(process.env.NEXT_PUBLIC_APP_URL);
+  if (app) origins.push(app);
+
+  const extras = process.env.CSRF_ALLOWED_ORIGINS;
+  if (extras) {
+    for (const raw of extras.split(",")) {
+      const o = normalizeOrigin(raw.trim());
+      if (o) origins.push(o);
     }
   }
 
-  const fromUrl = normalizeOrigin(request.url);
-  if (fromUrl) allowed.add(fromUrl);
-
-  const fromEnv = normalizeOrigin(process.env.NEXT_PUBLIC_APP_URL);
-  if (fromEnv) allowed.add(fromEnv);
-
-  return allowed;
+  return origins;
 }
 
 export function requireSameOrigin(
@@ -47,8 +48,21 @@ export function requireSameOrigin(
     };
   }
 
-  const allowed = allowedOrigins(request);
-  if (!allowed.has(candidate)) {
+  const allowed = buildAllowedOrigins();
+  if (allowed.length === 0) {
+    // Sin NEXT_PUBLIC_APP_URL configurada no hay forma segura de validar.
+    // Falla cerrado: rechazar. Loguear para que el deploy se note rápido.
+    console.error("[csrf] NEXT_PUBLIC_APP_URL no está configurada — rechazando request");
+    return {
+      ok: false,
+      response: NextResponse.json(
+        { error: "Origen no permitido" },
+        { status: 403 }
+      ),
+    };
+  }
+
+  if (!allowed.includes(candidate)) {
     return {
       ok: false,
       response: NextResponse.json(

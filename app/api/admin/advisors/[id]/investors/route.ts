@@ -1,5 +1,6 @@
 import { requireAdmin } from "@/lib/auth-guard";
 import { requireSameOrigin } from "@/lib/csrf";
+import { dbError } from "@/lib/api-errors";
 import { createAuditedAdminClient } from "@/lib/supabase/admin";
 import { NextResponse } from "next/server";
 import { z } from "zod";
@@ -26,7 +27,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
     .from("profiles")
     .select("id, role")
     .in("id", [params.id, parsed.data.investor_id]);
-  if (roleErr) return NextResponse.json({ error: roleErr.message }, { status: 400 });
+  if (roleErr) return dbError("advisor_investors.role_check", roleErr);
 
   const advisor = roles?.find((r) => r.id === params.id);
   const investor = roles?.find((r) => r.id === parsed.data.investor_id);
@@ -40,7 +41,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
   const { error } = await admin
     .from("advisor_investors")
     .insert({ advisor_id: params.id, investor_id: parsed.data.investor_id });
-  if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+  if (error) return dbError("advisor_investors.insert", error);
   return NextResponse.json({ ok: true });
 }
 
@@ -65,6 +66,6 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
     .delete()
     .eq("advisor_id", params.id)
     .eq("investor_id", investor_id);
-  if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+  if (error) return dbError("advisor_investors.delete", error);
   return NextResponse.json({ ok: true });
 }
