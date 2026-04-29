@@ -55,7 +55,7 @@ export default async function FundDetailPage({ params }: { params: { fundId: str
   if (!fund) notFound();
 
   const accessibleProjects = (allAccess ?? [])
-    .map((a) => a.funds as { id: string; name: string } | null)
+    .map((a) => a.funds as unknown as { id: string; name: string } | null)
     .filter((f): f is { id: string; name: string } => !!f)
     .sort((a, b) => a.name.localeCompare(b.name, "es"));
 

@@ -131,7 +131,7 @@ export default async function DashboardPage() {
           <CardTitle className="text-base sm:text-lg">{t("contributions")}</CardTitle>
         </CardHeader>
         <CardContent>
-          <ContributionsTable contributions={contributions ?? []} />
+          <ContributionsTable contributions={(contributions ?? []) as any} />
         </CardContent>
       </Card>
     </div>

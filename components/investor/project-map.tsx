@@ -20,6 +20,7 @@ export function ProjectMap({ funds }: { funds: Fund[] }) {
 
     const init = async () => {
       const L = (await import("leaflet")).default;
+      // @ts-ignore — Next.js resuelve el CSS, TS no tiene tipos para imports CSS
       await import("leaflet/dist/leaflet.css");
       if (cancelled || !mapRef.current) return;
 

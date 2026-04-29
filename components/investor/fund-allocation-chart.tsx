@@ -33,7 +33,7 @@ export function FundAllocationChart({ data }: { data: { name: string; value: num
                 <Cell key={i} fill={COLORS[i % COLORS.length]} />
               ))}
             </Pie>
-            <Tooltip formatter={(v: number) => formatCurrency(v)} />
+            <Tooltip formatter={((v: number) => formatCurrency(v)) as any} />
             <Legend />
           </PieChart>
         </ResponsiveContainer>
