@@ -1,7 +1,10 @@
 import { createClient } from "@/lib/supabase/server";
+import { requireSameOrigin } from "@/lib/csrf";
 import { NextResponse } from "next/server";
 
-export async function PATCH(_request: Request, { params }: { params: { id: string } }) {
+export async function PATCH(request: Request, { params }: { params: { id: string } }) {
+  const csrf = requireSameOrigin(request);
+  if (!csrf.ok) return csrf.response;
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

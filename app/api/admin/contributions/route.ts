@@ -13,10 +13,10 @@ const createSchema = z
     user_id: z.string().uuid(),
     fund_id: z.string().uuid(),
     milestone_id: z.string().uuid().nullish(),
-    amount: z.coerce.number().finite(),
-    committed_amount: z.coerce.number().finite().nullish(),
-    dividends: z.coerce.number().finite().nullish(),
-    date: z.string().min(1),
+    amount: z.coerce.number().finite().positive(),
+    committed_amount: z.coerce.number().finite().positive().nullish(),
+    dividends: z.coerce.number().finite().nonnegative().nullish(),
+    date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "fecha debe ser ISO yyyy-mm-dd"),
     notes: z.string().nullish(),
   })
   .strict();
@@ -34,6 +34,24 @@ export async function POST(request: Request) {
   const { user_id, fund_id, milestone_id, amount, committed_amount, dividends, date, notes } = parsed.data;
 
   const admin = createAuditedAdminClient(gate.userId);
+
+  // Coherencia: si vino un milestone, debe pertenecer al mismo fund.
+  if (milestone_id) {
+    const { data: ms, error: msErr } = await admin
+      .from("contribution_milestones")
+      .select("fund_id")
+      .eq("id", milestone_id)
+      .single();
+    if (msErr || !ms) {
+      return NextResponse.json({ error: "Etapa no encontrada" }, { status: 400 });
+    }
+    if (ms.fund_id !== fund_id) {
+      return NextResponse.json(
+        { error: "La etapa seleccionada no pertenece al proyecto" },
+        { status: 400 }
+      );
+    }
+  }
 
   const { data: contribution, error } = (await admin
     .from("contributions")

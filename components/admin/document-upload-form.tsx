@@ -22,6 +22,15 @@ const CATEGORIES: DocumentCategory[] = [
 
 const MAX_DOC_BYTES = 25 * 1024 * 1024;
 
+// MIME types reales aceptados (el accept del input no es control de seguridad).
+const ALLOWED_DOC_MIME = new Set([
+  "application/pdf",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.ms-excel",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+]);
+
 export function DocumentUploadForm({
   funds,
   defaultFundId,
@@ -46,6 +55,10 @@ export function DocumentUploadForm({
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (loading || !file || !fundId || !category) return;
+    if (!ALLOWED_DOC_MIME.has(file.type)) {
+      setErr("Formato no permitido. Subí un PDF, Word (.doc/.docx) o Excel (.xls/.xlsx).");
+      return;
+    }
     if (file.size > MAX_DOC_BYTES) {
       setErr(`El archivo supera el máximo permitido (25 MB). Tu archivo pesa ${(file.size / 1024 / 1024).toFixed(1)} MB.`);
       return;

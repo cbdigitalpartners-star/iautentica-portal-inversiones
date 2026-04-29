@@ -74,3 +74,44 @@ DROP TRIGGER IF EXISTS advisor_investors_validate_roles ON advisor_investors;
 CREATE TRIGGER advisor_investors_validate_roles
   BEFORE INSERT OR UPDATE ON advisor_investors
   FOR EACH ROW EXECUTE FUNCTION validate_advisor_investor_roles();
+
+-- ─── 3. COHERENCIA EN contributions ───────────────────────────
+-- (a) amount > 0: una contribución nunca puede ser <= 0.
+-- (b) milestone_id debe pertenecer al mismo fund_id si se especifica.
+-- Defensa en profundidad: la API admin también chequea, esto cubre
+-- inserts que pasen por service role / SQL editor / jobs.
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conname = 'contributions_amount_positive'
+      AND conrelid = 'public.contributions'::regclass
+  ) THEN
+    ALTER TABLE contributions
+      ADD CONSTRAINT contributions_amount_positive CHECK (amount > 0);
+  END IF;
+END $$;
+
+CREATE OR REPLACE FUNCTION validate_contribution_milestone_fund() RETURNS TRIGGER
+LANGUAGE plpgsql STABLE
+SET search_path = public
+AS $$
+DECLARE
+  ms_fund UUID;
+BEGIN
+  IF NEW.milestone_id IS NOT NULL THEN
+    SELECT fund_id INTO ms_fund FROM contribution_milestones WHERE id = NEW.milestone_id;
+    IF ms_fund IS DISTINCT FROM NEW.fund_id THEN
+      RAISE EXCEPTION 'milestone_id no pertenece al fund_id de la contribución'
+        USING ERRCODE = '23514';
+    END IF;
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS contributions_validate_milestone_fund ON contributions;
+CREATE TRIGGER contributions_validate_milestone_fund
+  BEFORE INSERT OR UPDATE ON contributions
+  FOR EACH ROW EXECUTE FUNCTION validate_contribution_milestone_fund();
