@@ -115,3 +115,98 @@ DROP TRIGGER IF EXISTS contributions_validate_milestone_fund ON contributions;
 CREATE TRIGGER contributions_validate_milestone_fund
   BEFORE INSERT OR UPDATE ON contributions
   FOR EACH ROW EXECUTE FUNCTION validate_contribution_milestone_fund();
+
+-- ─── 4. CONSTRAINTS DE INTEGRIDAD DE DOMINIO ──────────────────
+-- CHECKs adicionales que faltaban en schema.sql original. Todos son
+-- idempotentes (envueltos en IF NOT EXISTS sobre pg_constraint).
+-- Una migración con datos sucios fallaría: limpiar antes si aplica.
+
+DO $$
+BEGIN
+  -- (a) advisor_investors: prohibir auto-relación advisor=investor.
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conname = 'advisor_investors_no_self_link'
+      AND conrelid = 'public.advisor_investors'::regclass
+  ) THEN
+    ALTER TABLE advisor_investors
+      ADD CONSTRAINT advisor_investors_no_self_link
+      CHECK (advisor_id <> investor_id);
+  END IF;
+
+  -- (b) Montos financieros: contributions
+  -- amount > 0 ya está como `contributions_amount_positive` desde la sección 3.
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conname = 'contributions_committed_amount_positive'
+      AND conrelid = 'public.contributions'::regclass
+  ) THEN
+    ALTER TABLE contributions
+      ADD CONSTRAINT contributions_committed_amount_positive
+      CHECK (committed_amount IS NULL OR committed_amount > 0);
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conname = 'contributions_dividends_nonnegative'
+      AND conrelid = 'public.contributions'::regclass
+  ) THEN
+    ALTER TABLE contributions
+      ADD CONSTRAINT contributions_dividends_nonnegative
+      CHECK (dividends IS NULL OR dividends >= 0);
+  END IF;
+
+  -- (c) Montos: contribution_milestones.expected_amount
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conname = 'milestones_expected_amount_positive'
+      AND conrelid = 'public.contribution_milestones'::regclass
+  ) THEN
+    ALTER TABLE contribution_milestones
+      ADD CONSTRAINT milestones_expected_amount_positive
+      CHECK (expected_amount IS NULL OR expected_amount > 0);
+  END IF;
+
+  -- (d) Coordenadas geográficas en funds (NULL permitido).
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conname = 'funds_latitude_range'
+      AND conrelid = 'public.funds'::regclass
+  ) THEN
+    ALTER TABLE funds
+      ADD CONSTRAINT funds_latitude_range
+      CHECK (latitude IS NULL OR (latitude >= -90 AND latitude <= 90));
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conname = 'funds_longitude_range'
+      AND conrelid = 'public.funds'::regclass
+  ) THEN
+    ALTER TABLE funds
+      ADD CONSTRAINT funds_longitude_range
+      CHECK (longitude IS NULL OR (longitude >= -180 AND longitude <= 180));
+  END IF;
+
+  -- (e) Unicidad de rutas de storage. Evita duplicados que complican
+  -- borrado, auditoría y referencias. Las rutas las generamos client-side
+  -- con UUID/timestamp así que colisiones reales son imposibles, pero el
+  -- UNIQUE las hace imposibles también a nivel DB.
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conname = 'documents_storage_path_unique'
+      AND conrelid = 'public.documents'::regclass
+  ) THEN
+    ALTER TABLE documents
+      ADD CONSTRAINT documents_storage_path_unique UNIQUE (storage_path);
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conname = 'fund_photos_storage_path_unique'
+      AND conrelid = 'public.fund_photos'::regclass
+  ) THEN
+    ALTER TABLE fund_photos
+      ADD CONSTRAINT fund_photos_storage_path_unique UNIQUE (storage_path);
+  END IF;
+END $$;
