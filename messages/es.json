@@ -1,0 +1,165 @@
+{
+  "brand": {
+    "name": "iAutentica",
+    "tagline": "Portal de Inversiones"
+  },
+  "nav": {
+    "investments": "Inversiones",
+    "documents": "Documentos",
+    "logout": "Cerrar Sesión",
+    "dashboard": "Dashboard",
+    "projects": "Proyectos",
+    "investors": "Inversores",
+    "notifications": "Notificaciones"
+  },
+  "dashboard": {
+    "title": "Mi Portal de Inversiones",
+    "totalCapital": "Capital total invertido",
+    "activeInvestments": "Inversiones vigentes",
+    "dividends": "Dividendos recibidos",
+    "contributions": "Mis aportes",
+    "myFunds": "Mis proyectos",
+    "noContributions": "Aún no tienes aportes registrados.",
+    "committed": "Compromiso total",
+    "contributed": "Aportado",
+    "pending": "Pendiente"
+  },
+  "funds": {
+    "title": "Mis Proyectos",
+    "snapshot": "Detalle del Proyecto",
+    "type": "Tipo de proyecto",
+    "units": "Unidades estimadas",
+    "equity": "Equity total",
+    "delivery": "Entrega estimada",
+    "photos": "Galería",
+    "noFunds": "No tienes proyectos asignados.",
+    "developer": "Inmobiliaria",
+    "milestones": "Etapas"
+  },
+  "documents": {
+    "title": "Mis Documentos",
+    "filterByFund": "Filtrar por proyecto",
+    "filterByType": "Filtrar por tipo",
+    "viewDocument": "Ver documento",
+    "noDocuments": "No hay documentos disponibles.",
+    "allFunds": "Todos los proyectos",
+    "allTypes": "Todos los tipos",
+    "categories": {
+      "Update Mensual": "Update Mensual",
+      "Term Sheet": "Term Sheet",
+      "Legal": "Legal",
+      "Informe Trimestral": "Informe Trimestral",
+      "Documentos proyectos": "Documentos del Proyecto"
+    }
+  },
+  "auth": {
+    "login": "Iniciar Sesión",
+    "email": "Correo electrónico",
+    "password": "Contraseña",
+    "forgotPassword": "¿Olvidaste tu contraseña?",
+    "sendResetLink": "Enviar enlace de recuperación",
+    "newPassword": "Nueva contraseña",
+    "setNewPassword": "Establecer nueva contraseña",
+    "backToLogin": "Volver al inicio de sesión"
+  },
+  "admin": {
+    "users": "Usuarios",
+    "funds": "Proyectos",
+    "developers": "Inmobiliarias",
+    "advisors": "Asesores",
+    "contributions": "Aportes",
+    "documents": "Documentos",
+    "dashboard": "Resumen",
+    "newUser": "Nuevo usuario",
+    "newFund": "Nuevo proyecto",
+    "newDeveloper": "Nueva inmobiliaria",
+    "newContribution": "Nuevo aporte",
+    "uploadDocument": "Subir documento",
+    "newMilestone": "Nueva etapa",
+    "assignInvestors": "Asignar inversores",
+    "audit": "Auditoría"
+  },
+  "audit": {
+    "title": "Registro de auditoría",
+    "subtitle": "Cada cambio realizado por administradores queda registrado aquí.",
+    "when": "Fecha",
+    "actor": "Autor",
+    "action": "Acción",
+    "entity": "Entidad",
+    "entityId": "ID",
+    "changes": "Cambios",
+    "viewDetail": "Ver detalle",
+    "noLogs": "No hay registros para los filtros seleccionados.",
+    "filters": {
+      "all": "Todas",
+      "table": "Tabla",
+      "actor": "Autor",
+      "from": "Desde",
+      "to": "Hasta",
+      "apply": "Aplicar",
+      "clear": "Limpiar"
+    },
+    "actions": {
+      "INSERT": "Creó",
+      "UPDATE": "Editó",
+      "DELETE": "Borró"
+    },
+    "tables": {
+      "profiles": "Usuarios",
+      "developers": "Inmobiliarias",
+      "funds": "Proyectos",
+      "fund_access": "Accesos a proyectos",
+      "advisor_investors": "Asesor↔Inversor",
+      "contribution_milestones": "Etapas",
+      "contributions": "Aportes",
+      "documents": "Documentos",
+      "fund_photos": "Galería"
+    },
+    "loadMore": "Ver más",
+    "fields": "Campos modificados",
+    "from": "Antes",
+    "to": "Después",
+    "unknownActor": "Sistema"
+  },
+  "advisor": {
+    "title": "Portal del Asesor",
+    "myInvestors": "Mis Inversores",
+    "investorFunds": "Proyectos del inversor",
+    "investorDocuments": "Documentos del inversor",
+    "readOnly": "Solo lectura"
+  },
+  "notifications": {
+    "title": "Notificaciones",
+    "markAllRead": "Marcar todas como leídas",
+    "noNotifications": "No tienes notificaciones.",
+    "newDocument": "Nuevo documento en {fund}: {name}",
+    "updatedDocument": "Documento actualizado en {fund}: {name}",
+    "newContribution": "Se registró un aporte de {amount} en {fund}",
+    "milestoneReached": "{fund} alcanzó la etapa {milestone}"
+  },
+  "roles": {
+    "admin": "Administrador",
+    "investor": "Inversor",
+    "advisor": "Asesor"
+  },
+  "common": {
+    "all": "Todos",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "new": "Nuevo",
+    "loading": "Cargando...",
+    "error": "Error",
+    "success": "Éxito",
+    "search": "Buscar",
+    "actions": "Acciones",
+    "confirm": "Confirmar",
+    "back": "Volver",
+    "name": "Nombre",
+    "email": "Correo",
+    "date": "Fecha",
+    "amount": "Monto",
+    "fund": "Proyecto"
+  }
+}

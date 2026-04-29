@@ -1,0 +1,165 @@
+{
+  "brand": {
+    "name": "iAutentica",
+    "tagline": "Investment Portal"
+  },
+  "nav": {
+    "investments": "Investments",
+    "documents": "Documents",
+    "logout": "Sign Out",
+    "dashboard": "Dashboard",
+    "projects": "Projects",
+    "investors": "Investors",
+    "notifications": "Notifications"
+  },
+  "dashboard": {
+    "title": "My Investment Portal",
+    "totalCapital": "Total capital invested",
+    "activeInvestments": "Active investments",
+    "dividends": "Dividends received",
+    "contributions": "My contributions",
+    "myFunds": "My projects",
+    "noContributions": "No contributions recorded yet.",
+    "committed": "Total committed",
+    "contributed": "Contributed",
+    "pending": "Pending"
+  },
+  "funds": {
+    "title": "My Projects",
+    "snapshot": "Project Detail",
+    "type": "Project type",
+    "units": "Estimated units",
+    "equity": "Total equity",
+    "delivery": "Estimated delivery",
+    "photos": "Gallery",
+    "noFunds": "No projects assigned.",
+    "developer": "Developer",
+    "milestones": "Milestones"
+  },
+  "documents": {
+    "title": "My Documents",
+    "filterByFund": "Filter by project",
+    "filterByType": "Filter by type",
+    "viewDocument": "View document",
+    "noDocuments": "No documents available.",
+    "allFunds": "All projects",
+    "allTypes": "All types",
+    "categories": {
+      "Update Mensual": "Monthly Update",
+      "Term Sheet": "Term Sheet",
+      "Legal": "Legal",
+      "Informe Trimestral": "Quarterly Report",
+      "Documentos proyectos": "Project Documents"
+    }
+  },
+  "auth": {
+    "login": "Sign In",
+    "email": "Email address",
+    "password": "Password",
+    "forgotPassword": "Forgot your password?",
+    "sendResetLink": "Send reset link",
+    "newPassword": "New password",
+    "setNewPassword": "Set new password",
+    "backToLogin": "Back to sign in"
+  },
+  "admin": {
+    "users": "Users",
+    "funds": "Projects",
+    "developers": "Developers",
+    "advisors": "Advisors",
+    "contributions": "Contributions",
+    "documents": "Documents",
+    "dashboard": "Overview",
+    "newUser": "New user",
+    "newFund": "New project",
+    "newDeveloper": "New developer",
+    "newContribution": "New contribution",
+    "uploadDocument": "Upload document",
+    "newMilestone": "New milestone",
+    "assignInvestors": "Assign investors",
+    "audit": "Audit"
+  },
+  "audit": {
+    "title": "Audit log",
+    "subtitle": "Every change made by administrators is recorded here.",
+    "when": "Date",
+    "actor": "Author",
+    "action": "Action",
+    "entity": "Entity",
+    "entityId": "ID",
+    "changes": "Changes",
+    "viewDetail": "View detail",
+    "noLogs": "No records for the selected filters.",
+    "filters": {
+      "all": "All",
+      "table": "Table",
+      "actor": "Author",
+      "from": "From",
+      "to": "To",
+      "apply": "Apply",
+      "clear": "Clear"
+    },
+    "actions": {
+      "INSERT": "Created",
+      "UPDATE": "Edited",
+      "DELETE": "Deleted"
+    },
+    "tables": {
+      "profiles": "Users",
+      "developers": "Developers",
+      "funds": "Projects",
+      "fund_access": "Project access",
+      "advisor_investors": "Advisor↔Investor",
+      "contribution_milestones": "Milestones",
+      "contributions": "Contributions",
+      "documents": "Documents",
+      "fund_photos": "Gallery"
+    },
+    "loadMore": "Load more",
+    "fields": "Modified fields",
+    "from": "Before",
+    "to": "After",
+    "unknownActor": "System"
+  },
+  "advisor": {
+    "title": "Advisor Portal",
+    "myInvestors": "My Investors",
+    "investorFunds": "Investor projects",
+    "investorDocuments": "Investor documents",
+    "readOnly": "Read only"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "markAllRead": "Mark all as read",
+    "noNotifications": "No notifications.",
+    "newDocument": "New document in {fund}: {name}",
+    "updatedDocument": "Document updated in {fund}: {name}",
+    "newContribution": "Contribution of {amount} recorded in {fund}",
+    "milestoneReached": "{fund} reached milestone {milestone}"
+  },
+  "roles": {
+    "admin": "Administrator",
+    "investor": "Investor",
+    "advisor": "Advisor"
+  },
+  "common": {
+    "all": "All",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "new": "New",
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "search": "Search",
+    "actions": "Actions",
+    "confirm": "Confirm",
+    "back": "Back",
+    "name": "Name",
+    "email": "Email",
+    "date": "Date",
+    "amount": "Amount",
+    "fund": "Project"
+  }
+}
